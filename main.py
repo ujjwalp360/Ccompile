@@ -1,12 +1,24 @@
 import streamlit as st
 import subprocess
 import os
+import re
+from streamlit_ace import st_ace
 
 # Title of the app
 st.title("Online C Compiler")
 
-# Text area to write C code
-code = st.text_area("Write your C code here:", height=300)
+# Ace editor for C code input with auto-indentation and auto-closing of quotes, braces, etc.
+code = st_ace(language='c', theme='monokai', auto_update=True, keybinding="vscode", height=300)
+
+# Detect `scanf` statements in the code and prompt for user input
+scanf_inputs = []
+if code:
+    scanf_matches = re.findall(r'scanf\("%[^"]*"', code)
+    if scanf_matches:
+        st.write("Detected scanf. Please provide input values:")
+        for i, match in enumerate(scanf_matches):
+            user_input = st.text_input(f"Input for scanf #{i+1}:", "")
+            scanf_inputs.append(user_input)
 
 # Button to compile and run the code
 if st.button("Compile and Run"):
@@ -22,7 +34,10 @@ if st.button("Compile and Run"):
         if compile_result.returncode == 0:
             # If compilation was successful, run the program
             run_command = "./program" if os.name != "nt" else "program.exe"
-            run_result = subprocess.run(run_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            
+            # Run the program with the user inputs (if scanf was detected)
+            run_result = subprocess.run(run_command, input="\n".join(scanf_inputs).encode(), 
+                                        shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
             # Display the output or errors
             st.subheader("Output")
