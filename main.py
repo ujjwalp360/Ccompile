@@ -1,7 +1,6 @@
 import streamlit as st
 import subprocess
 import os
-import sys
 from streamlit_ace import st_ace
 from io import StringIO
 
@@ -22,13 +21,6 @@ if st.button("Compile and Run"):
             with open("program.c", "w") as f:
                 f.write(code)
 
-            # Verify the file exists
-            if not os.path.exists("program.c"):
-                st.error("The file program.c was not created.")
-                st.stop()
-            else:
-                st.success("program.c created successfully.")
-
             # Compile the C code using gcc
             compile_command = "gcc program.c -o program"
             compile_result = subprocess.run(compile_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -37,15 +29,11 @@ if st.button("Compile and Run"):
                 st.error(f"Compilation failed:\n{compile_result.stderr.decode()}")
                 st.stop()
 
-            # Prepare to capture the program's output and input
-            output_buffer = StringIO()
-            sys.stdout = output_buffer
-
-            # Run the compiled C program
+            # Prepare to run the compiled program
             run_command = "./program" if os.name != "nt" else "program.exe"
             process = subprocess.Popen(run_command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-            # Loop to handle input and output
+            # Display initial output from the program
             while True:
                 output = process.stdout.readline()
                 if output == "" and process.poll() is not None:
@@ -59,6 +47,7 @@ if st.button("Compile and Run"):
                         if user_input:
                             process.stdin.write(user_input + '\n')
                             process.stdin.flush()  # Send input to the program
+                            st.text_input("Provide input:", "")  # Clear the input box
 
             # Get remaining output after the program finishes
             remaining_output, _ = process.communicate()
