@@ -1,7 +1,6 @@
 import streamlit as st
 import subprocess
 import os
-import re
 from streamlit_ace import st_ace
 
 # Title of the app
@@ -10,15 +9,8 @@ st.title("Online C Compiler")
 # Ace editor for C code input with auto-indentation and auto-closing of quotes, braces, etc.
 code = st_ace(language='c', theme='monokai', auto_update=True, keybinding="vscode", height=300)
 
-# Detect `scanf` statements in the code and prompt for user input
-scanf_inputs = []
-if code:
-    scanf_matches = re.findall(r'scanf\("%[^"]*"', code)
-    if scanf_matches:
-        st.write("Detected scanf. Please provide input values:")
-        for i, match in enumerate(scanf_matches):
-            user_input = st.text_input(f"Input for scanf #{i+1}:", "")
-            scanf_inputs.append(user_input)
+# Interactive terminal input box (appears after the user runs the program)
+input_values = st.text_area("Enter input for the program (if required):", height=100)
 
 # Button to compile and run the code
 if st.button("Compile and Run"):
@@ -32,20 +24,23 @@ if st.button("Compile and Run"):
         compile_result = subprocess.run(compile_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         if compile_result.returncode == 0:
-            # If compilation was successful, run the program
+            # If compilation was successful, simulate terminal interaction
+            st.subheader("Program Output:")
+
+            # Use subprocess.Popen to run the program and send input dynamically
             run_command = "./program" if os.name != "nt" else "program.exe"
+            process = subprocess.Popen(run_command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             
-            # Run the program with the user inputs (if scanf was detected)
-            run_result = subprocess.run(run_command, input="\n".join(scanf_inputs).encode(), 
-                                        shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            # Send input to the program (simulate terminal behavior)
+            stdout, stderr = process.communicate(input=input_values.encode())
 
-            # Display the output or errors
-            st.subheader("Output")
-            st.text(run_result.stdout.decode("utf-8"))
+            # Display the output
+            st.text(stdout.decode("utf-8"))
 
-            if run_result.stderr:
+            # Display any runtime errors
+            if stderr:
                 st.subheader("Runtime Errors")
-                st.text(run_result.stderr.decode("utf-8"))
+                st.text(stderr.decode("utf-8"))
         else:
             # Display compilation errors
             st.subheader("Compilation Errors")
