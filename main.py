@@ -7,8 +7,18 @@ from streamlit_ace import st_ace
 # Title of the app
 st.title("Online C Compiler")
 
+# Default C code snippet
+default_code = """// Online C compiler to run C program online
+#include <stdio.h>
+
+int main() {
+    printf("Hello, World!\\n");
+    return 0;
+}
+"""
+
 # Ace editor for C code input with auto-indentation and auto-closing of quotes, braces, etc.
-code = st_ace(language='c', theme='monokai', auto_update=True, keybinding="vscode", height=300)
+code = st_ace(language='c', theme='monokai', auto_update=True, keybinding="vscode", height=300, value=default_code)
 
 # Detect `scanf` statements in the code and prompt for user input
 scanf_inputs = []
@@ -17,7 +27,7 @@ if code:
     if scanf_matches:
         st.write("Detected scanf. Please provide input values:")
         for i, match in enumerate(scanf_matches):
-            user_input = st.text_input(f"Input for scanf #{i+1}:", "")
+            user_input = st.text_input(f"Input for scanf #{i + 1}:", "")
             scanf_inputs.append(user_input)
 
 # Button to compile and run the code
@@ -52,3 +62,4 @@ if st.button("Compile and Run"):
             st.text(compile_result.stderr.decode("utf-8"))
     else:
         st.warning("Please write some C code.")
+        
