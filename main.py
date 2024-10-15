@@ -2,7 +2,9 @@ import streamlit as st
 import subprocess
 import os
 import re
+import sys
 from streamlit_ace import st_ace
+from io import StringIO
 
 # Title of the app
 st.title("Online C Compiler")
@@ -11,7 +13,7 @@ st.title("Online C Compiler")
 code = st_ace(language='c', theme='monokai', auto_update=True, keybinding="vscode", height=300)
 
 # Output display area
-output_area = st.empty()  # Placeholder for output and input display
+output_area = st.empty()  # Placeholder for output display
 
 # Button to compile and run the code
 if st.button("Compile and Run"):
@@ -25,48 +27,39 @@ if st.button("Compile and Run"):
         compile_result = subprocess.run(compile_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         if compile_result.returncode == 0:
-            # Detect any `scanf` statements in the code
-            scanf_matches = re.findall(r'scanf\("([^"]*)"', code)
+            # Prepare to capture the program's output and input
+            # Redirect stdout to capture print statements
+            output_buffer = StringIO()
+            sys.stdout = output_buffer
 
-            # If there are scanf statements, prompt for input values
-            input_values = {}
-            if scanf_matches:
-                for i, match in enumerate(scanf_matches):
-                    input_value = st.text_input(f"Input for scanf #{i+1}: ", "")
-                    if input_value:
-                        input_values[i] = input_value  # Store the input values
+            # Run the compiled C program
+            run_command = "./program" if os.name != "nt" else "program.exe"
 
-                # Only run the program if all inputs are provided
-                if len(input_values) == len(scanf_matches):
-                    # Combine input values into a single string separated by newlines
-                    user_input = "\n".join(input_values.values())
+            # Execute the program, while allowing for interactive input
+            process = subprocess.Popen(run_command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-                    # Run the compiled C program with user inputs
-                    run_command = "./program" if os.name != "nt" else "program.exe"
-                    run_result = subprocess.run(run_command, input=user_input.encode(),
-                                                shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            # Loop to handle input and output
+            while True:
+                # Read output from the program
+                output = process.stdout.readline()
+                if output == "" and process.poll() is not None:
+                    break
+                if output:
+                    output_area.text(output.strip())
 
-                    # Display the program output
-                    output_area.subheader("Program Output:")
-                    output_area.text(run_result.stdout.decode("utf-8"))
+                    # Check if there's a prompt for input
+                    if "Enter" in output:  # Adjust based on the output prompts in your program
+                        user_input = st.text_input("Provide input:", "")
+                        if user_input:  # If user input is provided, send it to the program
+                            process.stdin.write(user_input + '\n')
+                            process.stdin.flush()  # Ensure the input is sent to the program
 
-                    # Display any runtime errors
-                    if run_result.stderr:
-                        output_area.subheader("Runtime Errors")
-                        output_area.text(run_result.stderr.decode("utf-8"))
-            else:
-                # If no `scanf`, run the program normally
-                run_command = "./program" if os.name != "nt" else "program.exe"
-                run_result = subprocess.run(run_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            # Get remaining output after the program finishes
+            remaining_output, _ = process.communicate()
+            output_area.text(remaining_output)
 
-                # Display the program output
-                output_area.subheader("Program Output:")
-                output_area.text(run_result.stdout.decode("utf-8"))
-
-                # Display any runtime errors
-                if run_result.stderr:
-                    output_area.subheader("Runtime Errors")
-                    output_area.text(run_result.stderr.decode("utf-8"))
+            # Reset stdout
+            sys.stdout = sys.__stdout__
         else:
             # Display compilation errors
             output_area.subheader("Compilation Errors")
