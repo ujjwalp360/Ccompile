@@ -1,16 +1,17 @@
 import streamlit as st
 import subprocess
 import os
+import re
 from streamlit_ace import st_ace
 
 # Title of the app
 st.title("Online C Compiler")
 
-# Ace editor for C code input with auto-indentation and auto-closing of quotes, braces, etc.
+# Ace editor for C code input
 code = st_ace(language='c', theme='monokai', auto_update=True, keybinding="vscode", height=300)
 
-# Interactive terminal input box (appears after the user runs the program)
-input_values = st.text_area("Enter input for the program (if required):", height=100)
+# Output display area
+output_area = st.empty()  # Placeholder for output and input display
 
 # Button to compile and run the code
 if st.button("Compile and Run"):
@@ -24,26 +25,47 @@ if st.button("Compile and Run"):
         compile_result = subprocess.run(compile_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         if compile_result.returncode == 0:
-            # If compilation was successful, simulate terminal interaction
-            st.subheader("Program Output:")
+            # Detect any `scanf` statements in the code
+            scanf_matches = re.findall(r'scanf\("%[^"]*"', code)
 
-            # Use subprocess.Popen to run the program and send input dynamically
-            run_command = "./program" if os.name != "nt" else "program.exe"
-            process = subprocess.Popen(run_command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            
-            # Send input to the program (simulate terminal behavior)
-            stdout, stderr = process.communicate(input=input_values.encode())
+            # Create output and input sections
+            output_display = output_area.empty()
+            input_display = output_area.empty()
 
-            # Display the output
-            st.text(stdout.decode("utf-8"))
+            if scanf_matches:
+                output_display.subheader("Program Output:")
+                input_values = input_display.text_area("Input (for scanf if required):", height=100)
 
-            # Display any runtime errors
-            if stderr:
-                st.subheader("Runtime Errors")
-                st.text(stderr.decode("utf-8"))
+                if input_values:
+                    # Run the compiled C program with user inputs
+                    run_command = "./program" if os.name != "nt" else "program.exe"
+                    run_result = subprocess.run(run_command, input=input_values.encode(),
+                                                shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+                    # Display the program output
+                    output_display.text(run_result.stdout.decode("utf-8"))
+
+                    # Display any runtime errors
+                    if run_result.stderr:
+                        output_display.subheader("Runtime Errors")
+                        output_display.text(run_result.stderr.decode("utf-8"))
+            else:
+                # If no `scanf`, run the program normally
+                run_command = "./program" if os.name != "nt" else "program.exe"
+                run_result = subprocess.run(run_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+                # Display the program output
+                output_display.subheader("Program Output:")
+                output_display.text(run_result.stdout.decode("utf-8"))
+
+                # Display any runtime errors
+                if run_result.stderr:
+                    output_display.subheader("Runtime Errors")
+                    output_display.text(run_result.stderr.decode("utf-8"))
         else:
             # Display compilation errors
-            st.subheader("Compilation Errors")
-            st.text(compile_result.stderr.decode("utf-8"))
+            output_area.subheader("Compilation Errors")
+            output_area.text(compile_result.stderr.decode("utf-8"))
     else:
         st.warning("Please write some C code.")
+        
