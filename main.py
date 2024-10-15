@@ -1,6 +1,7 @@
 import streamlit as st
 import subprocess
 import os
+import sys
 from streamlit_ace import st_ace
 from io import StringIO
 
@@ -29,11 +30,15 @@ if st.button("Compile and Run"):
                 st.error(f"Compilation failed:\n{compile_result.stderr.decode()}")
                 st.stop()
 
-            # Prepare to run the compiled program
+            # Prepare to capture the program's output and input
+            output_buffer = StringIO()
+            sys.stdout = output_buffer
+
+            # Run the compiled C program
             run_command = "./program" if os.name != "nt" else "program.exe"
             process = subprocess.Popen(run_command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-            # Display initial output from the program
+            # Loop to handle input and output
             while True:
                 output = process.stdout.readline()
                 if output == "" and process.poll() is not None:
@@ -42,12 +47,11 @@ if st.button("Compile and Run"):
                     output_area.text(output.strip())
 
                     # Check for input prompts
-                    if "Enter" in output:
+                    if "Press Enter" in output:
                         user_input = st.text_input("Provide input:", "")
                         if user_input:
                             process.stdin.write(user_input + '\n')
                             process.stdin.flush()  # Send input to the program
-                            st.text_input("Provide input:", "")  # Clear the input box
 
             # Get remaining output after the program finishes
             remaining_output, _ = process.communicate()
