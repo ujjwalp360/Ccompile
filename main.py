@@ -36,17 +36,19 @@ if st.button("Compile and Run"):
             run_command = "./program" if os.name != "nt" else "program.exe"
             process = subprocess.Popen(run_command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-            # Read output and handle input
             console_output.text("Running...\n")  # Indicate that the program is running
+
+            # Loop to handle input and output
             while True:
+                # Read output from the program
                 output = process.stdout.readline()
+                
                 if output == "" and process.poll() is not None:
                     break
                 if output:
-                    console_output.text(output.strip())
-                    
-                    # Check for input prompts
-                    if "Enter" in output:
+                    console_output.text(output.strip())  # Display the output in the console
+                    # Check for prompts indicating the program needs input
+                    if "Enter" in output or "input" in output.lower():  # More generic prompt detection
                         user_input = st.text_input("Input:", "")
                         if user_input:
                             input_buffer.append(user_input)
@@ -69,3 +71,4 @@ if st.button("Compile and Run"):
             st.error(f"An error occurred: {str(e)}")
     else:
         st.warning("Please write some C code.")
+        
