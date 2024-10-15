@@ -2,13 +2,12 @@ import streamlit as st
 import subprocess
 import os
 import sys
-from streamlit_ace import st_ace
 
 # Title of the app
 st.title("Online C Compiler")
 
-# Ace editor for C code input
-code = st_ace(language='c', theme='monokai', auto_update=True, keybinding="vscode", height=300)
+# Text area for C code input
+code = st.text_area("C Code", height=300)
 
 # Display area for input and output
 console_output = st.empty()  # Placeholder for console output
@@ -71,4 +70,3 @@ if st.button("Compile and Run"):
             st.error(f"An error occurred: {str(e)}")
     else:
         st.warning("Please write some C code.")
-        
