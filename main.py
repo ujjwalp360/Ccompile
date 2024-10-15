@@ -26,46 +26,50 @@ if st.button("Compile and Run"):
 
         if compile_result.returncode == 0:
             # Detect any `scanf` statements in the code
-            scanf_matches = re.findall(r'scanf\("%[^"]*"', code)
+            scanf_matches = re.findall(r'scanf\("([^"]*)"', code)
 
-            # Create output and input sections
-            output_display = output_area.empty()
-            input_display = output_area.empty()
-
+            # If there are scanf statements, prompt for input values
+            input_values = {}
             if scanf_matches:
-                output_display.subheader("Program Output:")
-                input_values = input_display.text_area("Input (for scanf if required):", height=100)
+                for i, match in enumerate(scanf_matches):
+                    input_value = st.text_input(f"Input for scanf #{i+1}: ", "")
+                    if input_value:
+                        input_values[i] = input_value  # Store the input values
 
-                if input_values:
+                # Only run the program if all inputs are provided
+                if len(input_values) == len(scanf_matches):
+                    # Combine input values into a single string separated by newlines
+                    user_input = "\n".join(input_values.values())
+
                     # Run the compiled C program with user inputs
                     run_command = "./program" if os.name != "nt" else "program.exe"
-                    run_result = subprocess.run(run_command, input=input_values.encode(),
+                    run_result = subprocess.run(run_command, input=user_input.encode(),
                                                 shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
                     # Display the program output
-                    output_display.text(run_result.stdout.decode("utf-8"))
+                    output_area.subheader("Program Output:")
+                    output_area.text(run_result.stdout.decode("utf-8"))
 
                     # Display any runtime errors
                     if run_result.stderr:
-                        output_display.subheader("Runtime Errors")
-                        output_display.text(run_result.stderr.decode("utf-8"))
+                        output_area.subheader("Runtime Errors")
+                        output_area.text(run_result.stderr.decode("utf-8"))
             else:
                 # If no `scanf`, run the program normally
                 run_command = "./program" if os.name != "nt" else "program.exe"
                 run_result = subprocess.run(run_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
                 # Display the program output
-                output_display.subheader("Program Output:")
-                output_display.text(run_result.stdout.decode("utf-8"))
+                output_area.subheader("Program Output:")
+                output_area.text(run_result.stdout.decode("utf-8"))
 
                 # Display any runtime errors
                 if run_result.stderr:
-                    output_display.subheader("Runtime Errors")
-                    output_display.text(run_result.stderr.decode("utf-8"))
+                    output_area.subheader("Runtime Errors")
+                    output_area.text(run_result.stderr.decode("utf-8"))
         else:
             # Display compilation errors
             output_area.subheader("Compilation Errors")
             output_area.text(compile_result.stderr.decode("utf-8"))
     else:
         st.warning("Please write some C code.")
-        
