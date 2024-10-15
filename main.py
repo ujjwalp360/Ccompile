@@ -13,6 +13,9 @@ code = st_ace(language='c', theme='monokai', auto_update=True, keybinding="vscod
 # Display area for input and output
 console_output = st.empty()  # Placeholder for console output
 
+# Input buffer to capture user inputs
+input_buffer = []
+
 # Button to compile and run the code
 if st.button("Compile and Run"):
     if code:
@@ -34,26 +37,24 @@ if st.button("Compile and Run"):
             process = subprocess.Popen(run_command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
             # Read output and handle input
-            input_needed = True
-            user_inputs = []
-
+            console_output.text("Running...\n")  # Indicate that the program is running
             while True:
                 output = process.stdout.readline()
                 if output == "" and process.poll() is not None:
                     break
                 if output:
                     console_output.text(output.strip())
-
+                    
                     # Check for input prompts
-                    if "Enter" in output and input_needed:
-                        user_input = st.text_input("Provide input:", "")
+                    if "Enter" in output:
+                        user_input = st.text_input("Input:", "")
                         if user_input:
+                            input_buffer.append(user_input)
                             process.stdin.write(user_input + '\n')
                             process.stdin.flush()  # Send input to the program
-                            user_inputs.append(user_input)
-                            input_needed = False  # Avoid repeated input prompts
+                            console_output.text(f"Input: {user_input}\n")  # Show the input in the console
 
-            # Wait for the program to finish
+            # Wait for the program to finish and get remaining output
             remaining_output, errors = process.communicate()
 
             # Show any remaining output
