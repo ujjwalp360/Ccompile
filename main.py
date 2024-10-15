@@ -12,6 +12,7 @@ code = st_ace(language='c', theme='monokai', auto_update=True, keybinding="vscod
 # Output display area
 output_area = st.empty()  # Placeholder for output display
 input_area = st.empty()    # Placeholder for input display
+input_buffer = []  # Store inputs for multiple scanf calls
 
 # Button to compile and run the code
 if st.button("Compile and Run"):
@@ -33,6 +34,7 @@ if st.button("Compile and Run"):
             run_command = "./program" if os.name != "nt" else "program.exe"
             process = subprocess.Popen(run_command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
+            # Output display loop
             while True:
                 # Read output line by line
                 output = process.stdout.readline()
@@ -40,16 +42,15 @@ if st.button("Compile and Run"):
                     break
                 if output:
                     output_area.text(output.strip())
-
-                    # Check for user input prompts (customize this as necessary)
+                    
+                    # Check for input prompts
                     if "Enter" in output or "Press Enter" in output:
-                        # Prompt for input and wait for the user to provide it
                         user_input = input_area.text_input("Provide input:", "")
                         if user_input:
+                            # Write input to the process
                             process.stdin.write(user_input + '\n')
                             process.stdin.flush()  # Send input to the program
                             input_area.empty()  # Clear the input area after sending
-                            st.experimental_rerun()  # Rerun the app to refresh the state
 
             # Capture remaining output after the program finishes
             remaining_output, _ = process.communicate()
