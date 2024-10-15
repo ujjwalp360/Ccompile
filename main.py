@@ -1,9 +1,7 @@
 import streamlit as st
 import subprocess
 import os
-import sys
 from streamlit_ace import st_ace
-from io import StringIO
 
 # Title of the app
 st.title("Online C Compiler")
@@ -13,6 +11,7 @@ code = st_ace(language='c', theme='monokai', auto_update=True, keybinding="vscod
 
 # Output display area
 output_area = st.empty()  # Placeholder for output display
+input_area = st.empty()    # Placeholder for input display
 
 # Button to compile and run the code
 if st.button("Compile and Run"):
@@ -42,12 +41,15 @@ if st.button("Compile and Run"):
                 if output:
                     output_area.text(output.strip())
 
-                    # If the output prompts for user input (you can customize this check)
-                    if "Press Enter" in output or "Enter" in output:
-                        user_input = st.text_input("Provide input:", "")
+                    # Check for user input prompts (customize this as necessary)
+                    if "Enter" in output or "Press Enter" in output:
+                        # Prompt for input and wait for the user to provide it
+                        user_input = input_area.text_input("Provide input:", "")
                         if user_input:
                             process.stdin.write(user_input + '\n')
                             process.stdin.flush()  # Send input to the program
+                            input_area.empty()  # Clear the input area after sending
+                            st.experimental_rerun()  # Rerun the app to refresh the state
 
             # Capture remaining output after the program finishes
             remaining_output, _ = process.communicate()
