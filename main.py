@@ -26,10 +26,15 @@ exp1_code = """// Experiment 1: Addition of Two Numbers
 
 int main() {
     int a, b, sum;
+    
+    // Print the prompt, take input, and then print the input and result together
     printf("Enter two numbers: ");
     scanf("%d %d", &a, &b);
+    
+    // Now print the input values and the sum in the same line
     sum = a + b;
-    printf("Sum: %d\\n", sum);
+    printf("%d %d Sum: %d\\n", a, b, sum);
+    
     return 0;
 }
 """
@@ -41,6 +46,10 @@ int main() {
     int a, b, c;
     printf("Enter three numbers: ");
     scanf("%d %d %d", &a, &b, &c);
+    
+    // Print the entered numbers
+    printf("You entered: %d, %d, and %d\\n", a, b, c);
+    
     if (a >= b && a >= c)
         printf("%d is the largest number\\n", a);
     else if (b >= a && b >= c)
@@ -59,6 +68,10 @@ int main() {
     unsigned long long factorial = 1;
     printf("Enter an integer: ");
     scanf("%d", &n);
+    
+    // Print the entered number
+    printf("You entered: %d\\n", n);
+    
     if (n < 0)
         printf("Error! Factorial of a negative number doesn't exist.");
     else {
